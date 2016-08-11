@@ -1,0 +1,6 @@
+[package]
+name = "net_test"
+version = "0.1.0"
+authors = ["getynge <icecreamman1917@gmail.com>"]
+
+[dependencies]
