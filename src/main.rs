@@ -2,8 +2,8 @@ use std::net;
 use std::io;
 use std::io::Write;
 
+//The "big spoon" receives data from the little spoon
 fn big_spoon(conn:net::UdpSocket) {
-    println!("Successfully begun announcing");
     println!("Waiting for data to be sent...");
     let mut msg:[u8;255] = [0;255];
     conn.recv(&mut msg).unwrap();
@@ -11,6 +11,7 @@ fn big_spoon(conn:net::UdpSocket) {
     println!("Received: {}", message);
 }
 
+//The "little spoon" sends data to the big spoon
 fn little_spoon(conn:net::UdpSocket){
     println!("Please type in the message you would like to send (max len 255)");
     let mut input = String::new();
@@ -21,7 +22,8 @@ fn little_spoon(conn:net::UdpSocket){
 
 fn main() {
     println!("Welcome to network test");
-    println!("Please type in a port to connect to below");
+    println!("Please type in an address to connect to below");
+    println!("If you would like to be the big spoon, just type 0");
 
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -32,14 +34,24 @@ fn main() {
         println!("Bound to socket successfully");
         little_spoon(conn);
     }else{
+
         input = String::new();
-        println!("Error: you either did not type a valid IP or the socket failed to bind");
+        println!("None of the available ports were announcing");
         print!("Would you like to attempt to announce a connection instead? (y/n) ");
         io::stdout().flush().unwrap();
 
         io::stdin().read_line(&mut input).unwrap();
         if input.trim() == "y" {
-            big_spoon(net::UdpSocket::bind("127.0.0.1:16501").expect("Could not bind localhost"));
+            println!("Attempting to announce on ports 60000 65535");
+            let ip = net::Ipv4Addr::new(0, 0, 0, 0);
+            'traverse:for i in 60000..65535 {
+                let addr = net::SocketAddrV4::new(ip, i);
+                if let Ok(conn)  = net::UdpSocket::bind(addr) {
+                    println!("Successfully begun announcing on port {}", i);
+                    big_spoon(conn);
+                    break'traverse;
+                }
+            }
         }else{
             println!("exiting...");
         }
