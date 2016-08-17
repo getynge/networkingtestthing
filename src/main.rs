@@ -29,7 +29,7 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
 
-    if input == "0" {
+    if input == "0\n" {
         input = String::new();
         print!("Would you like to attempt to announce a connection instead? (y/n) ");
         io::stdout().flush().unwrap();
