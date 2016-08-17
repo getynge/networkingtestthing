@@ -1,9 +1,9 @@
 use std::net;
 use std::io;
 use std::io::Write;
+use std::str::FromStr;
 
-//The "big spoon" receives data from the little spoon
-fn big_spoon(conn:net::UdpSocket) {
+fn server_mode(conn:net::UdpSocket) {
     println!("Waiting for data to be sent...");
     let mut msg:[u8;255] = [0;255];
     conn.recv(&mut msg).unwrap();
@@ -11,13 +11,14 @@ fn big_spoon(conn:net::UdpSocket) {
     println!("Received: {}", message);
 }
 
-//The "little spoon" sends data to the big spoon
-fn little_spoon(conn:net::UdpSocket){
-    println!("Please type in the message you would like to send (max len 255)");
+fn client_mode(target: net::SocketAddr){
+    let socket = net::UdpSocket::bind("127.0.0.1:12345").unwrap();
     let mut input = String::new();
+
+    println!("Please type your message (limit 255 characters)");
     io::stdin().read_line(&mut input).unwrap();
-    conn.send(input.as_bytes()).expect("Error sending data to the big spoon");
-    println!("Data sent");
+
+    socket.send_to(input.as_bytes(), target).expect("Failed to send");
 }
 
 fn main() {
@@ -28,15 +29,8 @@ fn main() {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
 
-    println!("Beginning to establish tcp connection at address {}...", input.trim());
-
-    if let Ok(conn) = net::UdpSocket::bind(input.as_str()) {
-        println!("Bound to socket successfully");
-        little_spoon(conn);
-    }else{
-
+    if input == "0" {
         input = String::new();
-        println!("None of the available ports were announcing");
         print!("Would you like to attempt to announce a connection instead? (y/n) ");
         io::stdout().flush().unwrap();
 
@@ -44,16 +38,18 @@ fn main() {
         if input.trim() == "y" {
             println!("Attempting to announce on ports 60000 65535");
             let ip = net::Ipv4Addr::new(0, 0, 0, 0);
-            'traverse:for i in 60000..65535 {
+            'traverse: for i in 60000..65535 {
                 let addr = net::SocketAddrV4::new(ip, i);
-                if let Ok(conn)  = net::UdpSocket::bind(addr) {
+                if let Ok(conn) = net::UdpSocket::bind(addr) {
                     println!("Successfully begun announcing on port {}", i);
-                    big_spoon(conn);
-                    break'traverse;
+                    server_mode(conn);
+                    break 'traverse;
                 }
             }
-        }else{
+        } else {
             println!("exiting...");
         }
+    }else{
+        client_mode(net::SocketAddr::from_str(input.trim()).unwrap())
     }
 }
